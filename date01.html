@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>塔罗运势 · 今日抽卡</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .perspective { perspective: 1000px; }
+  .flip-inner { transition: transform 0.7s; transform-style: preserve-3d; }
+  .flipped .flip-inner { transform: rotateY(180deg); }
+  .flip-front, .flip-back { backface-visibility: hidden; }
+  .flip-back { transform: rotateY(180deg); }
+</style>
+</head>
+
+<body class="bg-[url('https://raw.githubusercontent.com/rosyip/tarot-fortune/main/Tarot/background.png')] bg-cover bg-center min-h-screen text-white flex items-center justify-center p-5">
+
+<div class="w-full max-w-sm mx-auto bg-white/10 backdrop-blur-xl rounded-3xl shadow-xl p-6">
+
+  <!-- 塔罗牌 -->
+  <div class="perspective w-36 h-64 mx-auto mb-5 cursor-pointer" id="cardBox">
+    <div class="flip-inner w-full h-full relative">
+      <!-- 牌背 -->
+      <div class="flip-front absolute w-full h-full rounded-xl overflow-hidden shadow-lg">
+        <img src="https://raw.githubusercontent.com/rosyip/tarot-fortune/main/Tarot/back.png" class="w-full h-full object-cover">
+      </div>
+      <!-- 牌面 -->
+      <div class="flip-back absolute w-full h-full rounded-xl overflow-hidden shadow-lg">
+        <img id="tarotImg" class="w-full h-full object-cover">
+      </div>
+    </div>
+  </div>
+
+  <!-- 牌信息（全部在牌外，绝不重叠） -->
+  <div class="text-center mb-1">
+    <div id="tarotName" class="text-lg font-bold"></div>
+    <div id="tarotPos" class="text-sm text-purple-200"></div>
+  </div>
+
+  <div class="text-center text-sm text-purple-100 mt-2 mb-4 h-[40px] flex items-center justify-center" id="meaning"></div>
+
+  <!-- 答案之书 -->
+  <div class="bg-white/10 rounded-xl p-4 text-center italic text-purple-100 min-h-[60px] flex items-center justify-center mb-5" id="oracle">
+    点击塔罗牌抽取今日指引
+  </div>
+
+
+</div>
+
+
+
+<script>
+// 塔罗库（精简稳定版）
+const cards = [
+  { n:"愚人", f:"major_00_fool.png", m:"大胆开始，跟随内心", r:"鲁莽冲动，缺乏规划" },
+  { n:"魔术师", f:"major_01_magician.png", m:"创造力强，把握机会", r:"拖延犹豫，才能浪费" },
+  { n:"女祭司", f:"major_02_high_priestess.png", m:"相信直觉，静心等待", r:"忽视内心，迷茫不安" },
+  { n:"女皇", f:"major_03_empress.png", m:"丰收温柔，享受生活", r:"依赖放纵，缺乏自律" },
+  { n:"皇帝", f:"major_04_emperor.png", m:"掌控全局，稳重可靠", r:"固执强势，不懂变通" },
+  { n:"教皇", f:"major_05_hierophant.png", m:"寻求指引，遵守规则", r:"墨守成规，不愿突破" },
+  { n:"恋人", f:"major_06_lovers.png", m:"美好关系，重要选择", r:"纠结犹豫，关系摩擦" },
+  { n:"战车", f:"major_07_chariot.png", m:"坚持胜利，掌控方向", r:"失控挫败，内心冲突" },
+  { n:"力量", f:"major_08_strength.png", m:"温柔勇敢，耐心包容", r:"懦弱急躁，情绪失控" },
+  { n:"隐者", f:"major_09_hermit.png", m:"独处反思，寻找智慧", r:"孤独封闭，逃避现实" }
+]
+
+// 答案之书
+const books = [
+  "勇敢一点，结果会很好。",
+  "放下焦虑，顺其自然。",
+  "现在正是行动的好时机。",
+  "相信你内心的声音。",
+  "值得等待，不要急。",
+  "保持温柔，你会被善待。",
+  "放手不属于你的，新的会来。",
+  "坚持下去，很快有转机。",
+  "别想太多，跟着感觉走。",
+  "答案会在不经意间出现。",
+  "别叫醒那盏灯",
+  "心动不如行动",
+  "勇敢一点",
+  "答案在呼吸之间",
+  "走自己的路，让别人说去吧",
+  "不妨一试",
+  "影子会替你回答",
+  "当断不断，反受其乱",
+  "顺势而为",
+  "先放下再说",
+  "空杯方能满载",
+  "今日事今日毕",
+  "答案在第三声钟响",
+  "凡事不必太较真",
+  "顺着落叶的方向",
+  "快刀斩乱麻",
+  "把犹豫折进风里",
+  "好事多磨",
+  "月亮不做选择",
+  "想多无益",
+  "等雾自己散开",
+  "按部就班",
+  "听鞋底的声音",
+  "懂得拒绝，方能自在",
+  "往事不追",
+  "顺其自然",
+  "不必纠结对错，经历自有意义",
+  "此路不通，另寻他途",
+  "鱼会游向安静处",
+  "命里有时终须有",
+  "别踩碎地上的光",
+  "遵从本心",
+  "答案藏在缝隙里",
+  "当机立断",
+  "风停时就行动",
+  "值得去做",
+  "往无人问津处",
+  "暂且搁置",
+  "把念头轻轻放下",
+  "时机已到，不必再等",
+  "云会告诉你时机",
+  "看似无路，其实转角就是出口",
+  "不必看清全貌",
+  "可以答应",
+  "静能生慧",
+  "三思而后行",
+  "让水自己流平",
+  "守好底线，不将就",
+  "别惊动此刻的静",
+  "放手更好",
+  "朝微光偏一点",
+  "主动出击",
+  "有舍才有得",
+  "时机刚好",
+  "影子转向时动身",
+  "明日复明日，明日何其多",
+  "无声胜有声",
+  "可以接受",
+  "把选择还给风",
+  "静观其变",
+  "路在雾的尽头",
+  "别勉强自己",
+  "别回头数脚印",
+  "坚持就是胜利",
+  "心乱时就停步",
+  "东山再起",
+  "星子偏左即是对",
+  "沉默是金",
+  "往无人踏足处",
+  "就这么定了",
+  "风会带走犹豫",
+  "千里之行，始于足下",
+  "往安静的方向去",
+  "机不可失，时不再来",
+  "答案在转身瞬间",
+  "放下包袱，轻装上阵",
+  "别触碰那片阴影",
+  "直觉最真",
+  "顺着心跳的节奏",
+  "雾深时更要前行",
+  "大胆选择，错了也有新方向",
+  "懂你的人不必解释",
+  "越拖越糟，越做越顺",
+  "答案藏在留白处",
+  "该放下就放下",
+  "别叫醒沉睡的事",
+  "往事不回头，余生不将就",
+  "往轻的那一边选",
+  "心安即是归处",
+  "答案早已写好",
+  "别害怕改变",
+  "前路自有光，你只管前行",
+  "变则通，通则久",
+  "人生苦短，及时行乐",
+  "不必抓住所有",
+  "该争则争，该放则放",
+  "你的选择，本身就是正确答案",
+  "欲速则不达"
+]
+
+// 抽卡
+function draw() {
+  const c = cards[Math.floor(Math.random()*cards.length)]
+  const rev = Math.random() > 0.5
+  document.getElementById('tarotName').innerText = c.n
+  document.getElementById('tarotPos').innerText = rev ? "逆位" : "正位"
+  document.getElementById('meaning').innerText = rev ? c.r : c.m
+  document.getElementById('tarotImg').src = "https://raw.githubusercontent.com/rosyip/tarot-fortune/main/Tarot/" + c.f
+  document.getElementById('tarotImg').style.transform = rev ? "rotate(180deg)" : "rotate(0deg)"
+  document.getElementById('oracle').innerText = books[Math.floor(Math.random()*books.length)]
+  document.getElementById('cardBox').classList.add('flipped')
+}
+
+// 点击翻牌或重新抽卡
+document.getElementById('cardBox').onclick = () => {
+  // 如果已经翻开，先翻回牌背
+  if (document.getElementById('cardBox').classList.contains('flipped')) {
+    document.getElementById('cardBox').classList.remove('flipped')
+    setTimeout(draw, 700)
+  } else {
+    // 如果未翻开，直接抽卡
+    draw()
+  }
+}
+</script>
+</body>
+</html>
